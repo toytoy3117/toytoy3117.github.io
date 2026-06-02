@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>勇者ゲーム</title>
+
+<style>
+body{
+    margin:0;
+    background:#222;
+    color:white;
+    text-align:center;
+    font-family:sans-serif;
+}
+
+#hero{
+    font-size:60px;
+    position:absolute;
+    bottom:30px;
+    left:50%;
+    transform:translateX(-50%);
+}
+</style>
+</head>
+<body>
+
+<h1>🧙勇者ゲーム</h1>
+
+<p>画面をタップして勇者を移動</p>
+
+<div id="hero">🧙</div>
+
+<script>
+const hero = document.getElementById("hero");
+
+document.addEventListener("touchstart",(e)=>{
+    hero.style.left = e.touches[0].clientX + "px";
+});
+
+document.addEventListener("click",(e)=>{
+    hero.style.left = e.clientX + "px";
+});
+</script>
+
+</body>
+</html>
