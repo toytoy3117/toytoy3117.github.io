@@ -2,167 +2,185 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>勇者ようたの大冒険</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>勇者の大冒険</title>
 <style>
-body{margin:0;background:#1b2430;color:#fff;font-family:sans-serif;text-align:center}
-#hud{padding:8px;font-weight:bold}
-canvas{background:#243447;border:2px solid gold;max-width:100vw;touch-action:none}
-#controls{display:flex;justify-content:center;gap:12px;margin:8px}
-button{width:90px;height:60px;font-size:28px;border:none;border-radius:12px}
-#attack{width:120px}
+body{margin:0;background:#1f2937;color:#fff;font-family:sans-serif;text-align:center}
+#hud{padding:10px;font-weight:bold}
+canvas{background:#111827;border:2px solid gold;display:block;margin:0 auto;touch-action:none;max-width:100vw}
+#controls{display:flex;justify-content:center;gap:10px;padding:10px}
+button{width:90px;height:60px;font-size:28px;border-radius:10px;border:none}
 </style>
 </head>
 <body>
-<div id="hud">❤️HP:<span id="hp">3</span> | 🏆スコア:<span id="score">0</span> | ⭐Lv:<span id="level">1</span> | 👑最高:<span id="best">0</span></div>
+<div id="hud">
+❤️HP:<span id="hp">3</span>
+| 🏆<span id="score">0</span>
+| ⭐Lv:<span id="level">1</span>
+| 👑<span id="best">0</span>
+</div>
+
 <canvas id="game" width="400" height="600"></canvas>
+
 <div id="controls">
-<button id="left">◀</button>
-<button id="attack">⚔️</button>
-<button id="right">▶</button>
+<button id="leftBtn">◀</button>
+<button id="attackBtn">⚔️</button>
+<button id="rightBtn">▶</button>
 </div>
 
 <script>
-const c=document.getElementById("game"),ctx=c.getContext("2d");
-const hpEl=hp,scoreEl=score,levelEl=level,bestEl=best;
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
 
-let left=false,right=false,attacking=false;
-let hero,enemies,coins,score,hpv,levelv,gameOver;
+const hpEl=document.getElementById('hp');
+const scoreEl=document.getElementById('score');
+const levelEl=document.getElementById('level');
+const bestEl=document.getElementById('best');
 
-const bestScore=localStorage.getItem("hero_best")||0;
-bestEl.textContent=bestScore;
+let leftPressed=false;
+let rightPressed=false;
+let attacking=false;
 
-function reset(){
- hero={x:180,y:520,size:40};
- enemies=[]; coins=[];
- score=0; hpv=3; levelv=1; gameOver=false;
- updateHud();
-}
+let hero={x:180,y:520,size:40};
+let enemies=[];
+let score=0;
+let hp=3;
+let level=1;
+let gameOver=false;
+
+bestEl.textContent=localStorage.getItem('hero_best') || 0;
+
 function updateHud(){
- hpEl.textContent=hpv;
+ hpEl.textContent=hp;
  scoreEl.textContent=score;
- levelEl.textContent=levelv;
+ levelEl.textContent=level;
 }
-reset();
 
-function press(id,val){
- document.getElementById(id).addEventListener("touchstart",e=>{e.preventDefault();window[val]=true;});
- document.getElementById(id).addEventListener("touchend",e=>{e.preventDefault();window[val]=false;});
- document.getElementById(id).addEventListener("mousedown",()=>window[val]=true);
- document.getElementById(id).addEventListener("mouseup",()=>window[val]=false);
+function addHold(btn, setter){
+ const el=document.getElementById(btn);
+ el.addEventListener('touchstart',e=>{e.preventDefault();setter(true);});
+ el.addEventListener('touchend',e=>{e.preventDefault();setter(false);});
+ el.addEventListener('mousedown',()=>setter(true));
+ el.addEventListener('mouseup',()=>setter(false));
+ el.addEventListener('mouseleave',()=>setter(false));
 }
-press("left","left");
-press("right","right");
 
-function atkStart(){attacking=true;setTimeout(()=>attacking=false,250);}
-attack.addEventListener("touchstart",e=>{e.preventDefault();atkStart();});
-attack.addEventListener("click",atkStart);
+addHold('leftBtn',v=>leftPressed=v);
+addHold('rightBtn',v=>rightPressed=v);
 
-document.addEventListener("keydown",e=>{
- if(e.key==="ArrowLeft") left=true;
- if(e.key==="ArrowRight") right=true;
- if(e.code==="Space") atkStart();
+function attack(){
+ if(gameOver) return;
+ attacking=true;
+ setTimeout(()=>attacking=false,250);
+}
+document.getElementById('attackBtn').addEventListener('click',attack);
+document.getElementById('attackBtn').addEventListener('touchstart',e=>{e.preventDefault();attack();});
+
+document.addEventListener('keydown',e=>{
+ if(e.key==='ArrowLeft') leftPressed=true;
+ if(e.key==='ArrowRight') rightPressed=true;
+ if(e.code==='Space') attack();
 });
-document.addEventListener("keyup",e=>{
- if(e.key==="ArrowLeft") left=false;
- if(e.key==="ArrowRight") right=false;
+document.addEventListener('keyup',e=>{
+ if(e.key==='ArrowLeft') leftPressed=false;
+ if(e.key==='ArrowRight') rightPressed=false;
 });
 
 function spawnEnemy(){
- const em=["👹","💀","🦇","🐉"];
+ const types=['👹','💀','🦇','🐉'];
  enemies.push({
-  x:Math.random()*360,y:-40,s:40,
-  e:em[Math.floor(Math.random()*em.length)],
-  speed:2+Math.random()*levelv
+  x:Math.random()*360,
+  y:-40,
+  emoji:types[Math.floor(Math.random()*types.length)],
+  speed:2+level*0.5,
+  size:40
  });
 }
-function spawnCoin(){
- coins.push({x:Math.random()*360,y:-20,speed:3});
-}
-setInterval(()=>{if(!gameOver)spawnEnemy();},900);
-setInterval(()=>{if(!gameOver)spawnCoin();},3000);
 
-function hit(a,b){
- return a.x<b.x+b.s && a.x+a.size>b.x &&
-        a.y<b.y+b.s && a.y+a.size>b.y;
+setInterval(()=>{
+ if(!gameOver) spawnEnemy();
+},1000);
+
+function intersects(ax,ay,as,bx,by,bs){
+ return ax<bx+bs && ax+as>bx && ay<by+bs && ay+as>by;
 }
 
 function update(){
  if(gameOver) return;
 
- if(left) hero.x-=6;
- if(right) hero.x+=6;
+ if(leftPressed) hero.x-=6;
+ if(rightPressed) hero.x+=6;
+
  hero.x=Math.max(0,Math.min(360,hero.x));
 
- enemies.forEach((m,i)=>{
-   m.y+=m.speed;
+ for(let i=enemies.length-1;i>=0;i--){
+   const e=enemies[i];
+   e.y+=e.speed;
 
-   if(attacking && Math.abs(m.y-hero.y)<70 && Math.abs(m.x-hero.x)<60){
+   if(attacking &&
+      Math.abs(e.x-hero.x)<60 &&
+      Math.abs(e.y-hero.y)<70){
       enemies.splice(i,1);
       score+=10;
-   } else if(hit(hero,m)){
+      continue;
+   }
+
+   if(intersects(hero.x,hero.y,hero.size,e.x,e.y,e.size)){
       enemies.splice(i,1);
-      hpv--;
-      if(hpv<=0){
-         gameOver=true;
-         if(score>bestScore){
-           localStorage.setItem("hero_best",score);
-         }
+      hp--;
+      if(hp<=0){
+        gameOver=true;
+        const best=Math.max(score,Number(localStorage.getItem('hero_best')||0));
+        localStorage.setItem('hero_best',best);
       }
-   } else if(m.y>620){
+      continue;
+   }
+
+   if(e.y>620){
       enemies.splice(i,1);
       score++;
    }
- });
+ }
 
- coins.forEach((coin,i)=>{
-   coin.y+=coin.speed;
-   if(hit(hero,{x:coin.x,y:coin.y,s:20})){
-      coins.splice(i,1);
-      score+=5;
-   } else if(coin.y>620){
-      coins.splice(i,1);
-   }
- });
-
- levelv=Math.floor(score/50)+1;
+ level=Math.floor(score/50)+1;
  updateHud();
 }
 
 function draw(){
  ctx.clearRect(0,0,400,600);
 
- ctx.font="40px serif";
- ctx.fillText("🧙",hero.x,hero.y+35);
+ ctx.font='40px serif';
+ ctx.fillText('🧙',hero.x,hero.y+35);
 
- enemies.forEach(m=>{
-   ctx.font="40px serif";
-   ctx.fillText(m.e,m.x,m.y+35);
- });
-
- coins.forEach(coin=>{
-   ctx.font="24px serif";
-   ctx.fillText("💰",coin.x,coin.y+20);
+ enemies.forEach(e=>{
+   ctx.font='40px serif';
+   ctx.fillText(e.emoji,e.x,e.y+35);
  });
 
  if(attacking){
-   ctx.font="36px serif";
-   ctx.fillText("⚔️",hero.x+30,hero.y+20);
+   ctx.font='30px serif';
+   ctx.fillText('⚔️',hero.x+30,hero.y+15);
  }
 
  if(gameOver){
-   ctx.fillStyle="white";
-   ctx.font="32px sans-serif";
-   ctx.fillText("GAME OVER",85,260);
-   ctx.font="22px sans-serif";
-   ctx.fillText("タップで再開",130,310);
+   ctx.fillStyle='white';
+   ctx.font='30px sans-serif';
+   ctx.fillText('GAME OVER',90,260);
+   ctx.font='20px sans-serif';
+   ctx.fillText('画面をタップして再開',95,300);
  }
 }
 
-function loop(){update();draw();requestAnimationFrame(loop);}
+function loop(){
+ update();
+ draw();
+ requestAnimationFrame(loop);
+}
 loop();
 
-c.addEventListener("click",()=>{if(gameOver){location.reload();}});
+canvas.addEventListener('click',()=>{
+ if(gameOver) location.reload();
+});
 </script>
 </body>
 </html>
